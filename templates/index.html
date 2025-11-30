@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Control Logístico</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --bg-light: #f8f9fc;
+        }
+
+        body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; }
+
+        /* Tarjetas de Indicadores (KPIs) */
+        .card-kpi {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .card-kpi:hover { transform: translateY(-5px); }
+        .border-left-primary { border-left: 5px solid var(--primary-color); }
+        .border-left-success { border-left: 5px solid var(--success-color); }
+        .border-left-info { border-left: 5px solid var(--info-color); }
+        .border-left-warning { border-left: 5px solid var(--warning-color); }
+
+        /* Área de Carga */
+        .upload-area {
+            border: 2px dashed #d1d3e2;
+            background: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover { border-color: var(--primary-color); background-color: #f1f7ff; }
+
+        /* Tabla y Gráficos */
+        .card-dashboard { border-radius: 10px; border: none; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
+        .table thead th { background-color: var(--primary-color); color: white; border: none; }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.92); z-index: 9999;
+            display: none; justify-content: center; align-items: center; flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-truck-flatbed"></i> Control de Manifiestos
+            </a>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        
+        <!-- Sección de Carga de Archivos -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <form id="uploadForm" class="d-flex align-items-center gap-3 flex-wrap">
+                            <div class="upload-area flex-grow-1 p-3 text-center" id="dropZone">
+                                <i class="bi bi-cloud-arrow-up text-primary fs-3"></i>
+                                <span class="ms-2 fw-semibold text-secondary">Clic para seleccionar carpetas/archivos PDF</span>
+                                <input type="file" id="fileInput" name="files" multiple accept=".pdf" style="display:none;">
+                            </div>
+                            <button type="submit" class="btn btn-primary px-4 py-3 fw-bold" id="btnProcesar" disabled>
+                                <i class="bi bi-gear-fill"></i> GENERAR REPORTE
+                            </button>
+                        </form>
+                        <div id="fileList" class="text-end small text-success mt-2 fw-bold"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENIDO DEL DASHBOARD (Se muestra al procesar) -->
+        <div id="dashboardContent" class="d-none">
+            
+            <!-- Fila de KPIs -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card card-kpi border-left-primary h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total Guías</div>
+                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiGuias">0</div>
+                                </div>
+                                <div class="col-auto"><i class="bi bi-file-earmark-text fs-1 text-black-50"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card card-kpi border-left-success h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs fw-bold text-success text-uppercase mb-1">Peso Total (Kg)</div>
+                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiPeso">0</div>
+                                </div>
+                                <div class="col-auto"><i class="bi bi-box-seam fs-1 text-black-50"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card card-kpi border-left-info h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs fw-bold text-info text-uppercase mb-1">Choferes</div>
+                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiChoferes">0</div>
+                                </div>
+                                <div class="col-auto"><i class="bi bi-person-badge fs-1 text-black-50"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card card-kpi border-left-warning h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs fw-bold text-warning text-uppercase mb-1">Vehículos</div>
+                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiVehiculos">0</div>
+                                </div>
+                                <div class="col-auto"><i class="bi bi-truck fs-1 text-black-50"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fila de Gráficos -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="card card-dashboard shadow mb-4">
+                        <div class="card-header py-3 bg-white">
+                            <h6 class="m-0 fw-bold text-primary">Top 10 Choferes por Carga (Kg)</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px;">
+                                <canvas id="chartChoferes"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card card-dashboard shadow mb-4">
+                        <div class="card-header py-3 bg-white">
+                            <h6 class="m-0 fw-bold text-primary">Distribución por Vehículo</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px;">
+                                <canvas id="chartVehiculos"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Datos -->
+            <div class="card card-dashboard shadow mb-4">
+                <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-primary"><i class="bi bi-table"></i> Detalle de Manifiestos</h6>
+                    <button class="btn btn-success btn-sm fw-bold shadow-sm" id="btnDownload">
+                        <i class="bi bi-file-earmark-excel-fill"></i> Descargar Excel (Vista Actual)
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="dataTable" class="table table-hover w-100" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Reparto</th>
+                                    <th>Chofer</th>
+                                    <th>Vehículo</th>
+                                    <th>Guía</th>
+                                    <th>Fecha</th>
+                                    <th>Destinatario</th>
+                                    <th>Peso (Kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- Fin dashboardContent -->
+    </div>
+
+    <!-- Spinner de Carga -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem;"></div>
+        <h4 class="text-dark fw-bold">Procesando Información...</h4>
+        <p class="text-muted">Extrayendo datos de los PDFs</p>
+    </div>
+
+    <!-- Scripts Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        let myTable;
+        let chartChoferes, chartVehiculos;
+
+        $(document).ready(function() {
+            // Inicializar DataTable
+            myTable = $('#dataTable').DataTable({
+                language: { url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json" },
+                pageLength: 10,
+                responsive: true,
+                columns: [
+                    { data: 'nro_reparto' },
+                    { data: 'chofer' },
+                    { data: 'vehiculo' },
+                    { data: 'nro_guia' },
+                    { data: 'fecha_traslado' },
+                    { data: 'nombre_destinatario' },
+                    { 
+                        data: 'peso', 
+                        className: 'text-end fw-bold',
+                        render: $.fn.dataTable.render.number(',', '.', 2, '') 
+                    }
+                ]
+            });
+
+            // --- EVENTO CLAVE: Cuando la tabla se redibuja (filtro/búsqueda) ---
+            myTable.on('draw', function () {
+                // Obtenemos solo los datos filtrados disponibles
+                let filteredData = myTable.rows({ search: 'applied' }).data().toArray();
+                updateDashboard(filteredData);
+            });
+
+            // Selección de archivos
+            $('#dropZone').on('click', () => $('#fileInput').click());
+            $('#fileInput').on('click', (e) => e.stopPropagation());
+            $('#fileInput').on('change', function() {
+                if(this.files.length > 0) {
+                    $('#fileList').text(`${this.files.length} archivo(s) listo(s)`);
+                    $('#btnProcesar').prop('disabled', false);
+                }
+            });
+
+            // Enviar formulario (Procesar PDF)
+            $('#uploadForm').on('submit', function(e) {
+                e.preventDefault();
+                $('#loading').css('display', 'flex');
+                
+                const formData = new FormData(this);
+
+                $.ajax({
+                    url: '/api/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        $('#loading').css('display', 'none');
+                        
+                        if (response.length === 0) {
+                            Swal.fire('Sin datos', 'No se encontró información en los PDFs.', 'info');
+                            return;
+                        }
+
+                        // Limpiar y parsear datos numéricos
+                        let cleanData = response.map(item => ({
+                            ...item,
+                            peso: parseFloat(String(item.peso).replace(/,/g, '')) || 0
+                        }));
+
+                        // Llenar tabla y disparar actualización
+                        myTable.clear();
+                        myTable.rows.add(cleanData);
+                        myTable.draw(); // Esto llama a updateDashboard automáticamente
+
+                        $('#dashboardContent').removeClass('d-none');
+                        // Scroll suave
+                        $('html, body').animate({ scrollTop: $("#dashboardContent").offset().top - 20 }, 600);
+                        
+                        const Toast = Swal.mixin({
+                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000
+                        });
+                        Toast.fire({ icon: 'success', title: 'Datos cargados exitosamente' });
+                    },
+                    error: function() {
+                        $('#loading').css('display', 'none');
+                        Swal.fire('Error', 'Hubo un problema al procesar los archivos.', 'error');
+                    }
+                });
+            });
+
+            // Descargar Excel Filtrado
+            $('#btnDownload').on('click', function() {
+                let filteredData = myTable.rows({ search: 'applied' }).data().toArray();
+                
+                if(filteredData.length === 0) {
+                    Swal.fire('Aviso', 'No hay datos visibles para descargar.', 'warning');
+                    return;
+                }
+
+                let btn = $(this);
+                let originalContent = btn.html();
+                btn.html('<span class="spinner-border spinner-border-sm"></span> Generando...');
+                btn.prop('disabled', true);
+
+                fetch('/api/download-excel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(filteredData)
+                })
+                .then(res => res.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "Reporte_Filtrado.xlsx";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    btn.html(originalContent);
+                    btn.prop('disabled', false);
+                })
+                .catch(() => {
+                    Swal.fire('Error', 'No se pudo generar el Excel.', 'error');
+                    btn.html(originalContent);
+                    btn.prop('disabled', false);
+                });
+            });
+        });
+
+        // --- FUNCIONES DE GRÁFICOS Y KPI ---
+
+        function updateDashboard(data) {
+            // 1. Cálculos de KPIs
+            let totalGuias = data.length;
+            let totalPeso = data.reduce((sum, item) => sum + (item.peso || 0), 0);
+            let uniqueChoferes = new Set(data.map(d => d.chofer)).size;
+            let uniqueVehiculos = new Set(data.map(d => d.vehiculo)).size;
+
+            // Actualizar textos
+            $('#kpiGuias').text(totalGuias);
+            $('#kpiPeso').text(totalPeso.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+            $('#kpiChoferes').text(uniqueChoferes);
+            $('#kpiVehiculos').text(uniqueVehiculos);
+
+            // 2. Preparar datos para Gráficos
+            // Agrupar peso por chofer
+            let choferMap = {};
+            data.forEach(d => {
+                let c = d.chofer || "Sin Chofer";
+                choferMap[c] = (choferMap[c] || 0) + d.peso;
+            });
+            // Top 10 Choferes
+            let topChoferes = Object.entries(choferMap)
+                .sort((a,b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            // Agrupar conteo por vehículo
+            let vehiculoMap = {};
+            data.forEach(d => {
+                let v = d.vehiculo || "N/A";
+                vehiculoMap[v] = (vehiculoMap[v] || 0) + 1;
+            });
+
+            // 3. Renderizar Gráficos
+            renderChartChoferes(topChoferes);
+            renderChartVehiculos(vehiculoMap);
+        }
+
+        function renderChartChoferes(dataArr) {
+            const ctx = document.getElementById('chartChoferes').getContext('2d');
+            const labels = dataArr.map(x => x[0]);
+            const values = dataArr.map(x => x[1]);
+
+            if (chartChoferes) chartChoferes.destroy();
+
+            chartChoferes = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Peso (Kg)',
+                        data: values,
+                        backgroundColor: '#4e73df',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function renderChartVehiculos(mapData) {
+            const ctx = document.getElementById('chartVehiculos').getContext('2d');
+            const labels = Object.keys(mapData);
+            const values = Object.values(mapData);
+            const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
+
+            if (chartVehiculos) chartVehiculos.destroy();
+
+            chartVehiculos = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'right', labels: { boxWidth: 12 } } 
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
