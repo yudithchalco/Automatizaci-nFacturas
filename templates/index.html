@@ -3,218 +3,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Control Logístico</title>
+    <title>Dashboard Logístico Pro</title>
+    
+    <!-- Fuentes: Poppins para tipografía moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- DataTables CSS -->
-    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <!-- Iconos -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     
+    <!-- DataTables & Flatpickr (Fechas) -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
     <style>
         :root {
-            --primary-color: #4e73df;
-            --success-color: #1cc88a;
-            --info-color: #36b9cc;
-            --warning-color: #f6c23e;
-            --bg-light: #f8f9fc;
+            /* Paleta de colores Premium */
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            --bg-body: #f4f7fe;
+            --text-dark: #2b3674;
         }
 
-        body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; }
+        body { 
+            background-color: var(--bg-body); 
+            font-family: 'Poppins', sans-serif; 
+            color: var(--text-dark);
+            padding-bottom: 40px;
+        }
 
-        /* Tarjetas de Indicadores (KPIs) */
+        /* Navbar Glassmorphism */
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            position: sticky; top: 0; z-index: 1000;
+            margin-bottom: 2rem;
+            padding: 1rem 0;
+        }
+
+        /* KPIs (Tarjetas de Indicadores) */
         .card-kpi {
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
+            border-radius: 20px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease;
+            height: 100%; /* Para que todas tengan la misma altura */
         }
         .card-kpi:hover { transform: translateY(-5px); }
-        .border-left-primary { border-left: 5px solid var(--primary-color); }
-        .border-left-success { border-left: 5px solid var(--success-color); }
-        .border-left-info { border-left: 5px solid var(--info-color); }
-        .border-left-warning { border-left: 5px solid var(--warning-color); }
+        
+        .bg-gradient-primary { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .bg-gradient-success { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .bg-gradient-warning { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .bg-gradient-info { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+
+        .kpi-icon {
+            position: absolute; right: 15px; bottom: 15px;
+            font-size: 3.5rem; opacity: 0.25; transform: rotate(-10deg);
+        }
 
         /* Área de Carga */
-        .upload-area {
-            border: 2px dashed #d1d3e2;
+        .upload-container {
             background: white;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            padding: 3rem 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
         }
-        .upload-area:hover { border-color: var(--primary-color); background-color: #f1f7ff; }
+        .upload-zone {
+            border: 2px dashed #e0e5f2;
+            border-radius: 15px;
+            background: #fcfdfe;
+            transition: all 0.3s;
+            cursor: pointer;
+            padding: 3rem;
+        }
+        .upload-zone:hover { border-color: #764ba2; background: #f8faff; transform: scale(1.01); }
 
-        /* Tabla y Gráficos */
-        .card-dashboard { border-radius: 10px; border: none; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
-        .table thead th { background-color: var(--primary-color); color: white; border: none; }
+        /* Contenedores Dashboard */
+        .card-dashboard {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            height: 100%;
+        }
+
+        /* Tabla */
+        .table thead th {
+            background-color: #f8f9fa;
+            color: #a3aed0;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            border: none;
+            padding: 1rem;
+        }
+        .table td { vertical-align: middle; border-bottom: 1px solid #f0f0f0; padding: 0.8rem; }
+        .badge-reparto { background-color: #e2e8f0; color: #2d3748; padding: 0.5em 0.8em; border-radius: 8px; font-weight: 600; }
         
-        /* Loading Overlay */
-        .loading-overlay {
+        /* Filtro de Fechas */
+        .date-filter-wrapper {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            gap: 10px;
+        }
+        .flatpickr-input { border: none; outline: none; background: transparent; font-weight: 500; width: 210px; color: #555; }
+
+        /* Loader Overlay */
+        .loader-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.92); z-index: 9999;
+            background: rgba(255,255,255,0.95); z-index: 9999;
             display: none; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .spinner-custom {
+            width: 3rem; height: 3rem; border: 4px solid #f3f3f3;
+            border-top: 4px solid #764ba2; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Responsive tweaks */
+        @media (max-width: 768px) {
+            .navbar-glass { padding: 0.5rem 0; }
+            .kpi-icon { font-size: 2.5rem; }
+            .date-filter-wrapper { width: 100%; justify-content: space-between; margin-bottom: 10px; }
+            .flatpickr-input { width: 100%; }
+            .upload-zone { padding: 1.5rem; }
         }
     </style>
 </head>
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">
-                <i class="bi bi-truck-flatbed"></i> Control de Manifiestos
-            </a>
+    <nav class="navbar navbar-glass">
+        <div class="container-fluid px-lg-5">
+            <span class="navbar-brand fw-bold fs-4 d-flex align-items-center" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <i class="bi bi-grid-1x2-fill me-2" style="-webkit-text-fill-color: #667eea;"></i> 
+                Analytics Dashboard
+            </span>
+            <span class="text-muted small d-none d-md-block">Gestión Inteligente de Manifiestos</span>
         </div>
     </nav>
 
-    <div class="container-fluid px-4">
+    <div class="container-fluid px-lg-5">
         
-        <!-- Sección de Carga de Archivos -->
-        <div class="row mb-4">
+        <!-- SECCIÓN DE CARGA (Visible al inicio) -->
+        <div class="row justify-content-center mb-5" id="uploadSection">
             <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <form id="uploadForm" class="d-flex align-items-center gap-3 flex-wrap">
-                            <div class="upload-area flex-grow-1 p-3 text-center" id="dropZone">
-                                <i class="bi bi-cloud-arrow-up text-primary fs-3"></i>
-                                <span class="ms-2 fw-semibold text-secondary">Clic para seleccionar carpetas/archivos PDF</span>
-                                <input type="file" id="fileInput" name="files" multiple accept=".pdf" style="display:none;">
-                            </div>
-                            <button type="submit" class="btn btn-primary px-4 py-3 fw-bold" id="btnProcesar" disabled>
-                                <i class="bi bi-gear-fill"></i> GENERAR REPORTE
-                            </button>
-                        </form>
-                        <div id="fileList" class="text-end small text-success mt-2 fw-bold"></div>
-                    </div>
+                <div class="upload-container text-center">
+                    <h2 class="fw-bold mb-3">Sube tus Manifiestos</h2>
+                    <p class="text-muted mb-5">Analiza múltiples archivos PDF en segundos y genera reportes detallados.</p>
+                    
+                    <form id="uploadForm">
+                        <div class="upload-zone mb-4" id="dropZone">
+                            <i class="bi bi-cloud-arrow-up-fill fs-1 text-primary mb-3 d-block"></i>
+                            <h5 class="fw-bold">Haz clic o arrastra archivos aquí</h5>
+                            <p class="small text-muted">Selecciona la carpeta completa o múltiples PDFs</p>
+                            <input type="file" id="fileInput" name="files" multiple accept=".pdf" class="d-none">
+                        </div>
+                        <div id="fileList" class="mb-4 fw-bold text-success" style="min-height: 24px;"></div>
+                        <button type="submit" class="btn btn-dark btn-lg px-5 rounded-pill shadow-lg" id="btnProcesar" disabled>
+                            Procesar Datos <i class="bi bi-lightning-fill ms-2"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
 
-        <!-- CONTENIDO DEL DASHBOARD (Se muestra al procesar) -->
+        <!-- DASHBOARD (Oculto inicialmente) -->
         <div id="dashboardContent" class="d-none">
             
-            <!-- Fila de KPIs -->
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card card-kpi border-left-primary h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total Guías</div>
-                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiGuias">0</div>
-                                </div>
-                                <div class="col-auto"><i class="bi bi-file-earmark-text fs-1 text-black-50"></i></div>
-                            </div>
-                        </div>
+            <!-- Barra de Herramientas Responsive -->
+            <div class="row align-items-center mb-4 g-3">
+                <div class="col-md-4">
+                    <h4 class="fw-bold m-0">Resumen General</h4>
+                    <p class="text-muted small m-0">Datos en tiempo real</p>
+                </div>
+                <div class="col-md-8 d-flex flex-wrap justify-content-md-end gap-2">
+                    <!-- Filtro de Fechas -->
+                    <div class="date-filter-wrapper">
+                        <i class="bi bi-calendar-range text-primary"></i>
+                        <input type="text" id="dateRange" placeholder="Filtrar por rango de fechas">
+                        <i class="bi bi-x-circle-fill text-muted" style="cursor:pointer" id="clearDate" title="Limpiar filtro"></i>
+                    </div>
+                    
+                    <button class="btn btn-success rounded-pill px-4 shadow-sm fw-medium" id="btnDownload">
+                        <i class="bi bi-file-earmark-excel me-2"></i> Exportar Excel
+                    </button>
+                    <button class="btn btn-light rounded-circle border shadow-sm" onclick="location.reload()" title="Nuevo Análisis">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="row g-4 mb-4">
+                <div class="col-xl-3 col-md-6">
+                    <div class="card-kpi bg-gradient-primary p-4">
+                        <h6 class="text-white-50 text-uppercase fw-bold small">Total Guías</h6>
+                        <h2 class="fw-bold mt-2 display-6" id="kpiGuias">0</h2>
+                        <i class="bi bi-files kpi-icon"></i>
                     </div>
                 </div>
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card card-kpi border-left-success h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs fw-bold text-success text-uppercase mb-1">Peso Total (Kg)</div>
-                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiPeso">0</div>
-                                </div>
-                                <div class="col-auto"><i class="bi bi-box-seam fs-1 text-black-50"></i></div>
-                            </div>
-                        </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card-kpi bg-gradient-success p-4">
+                        <h6 class="text-white-50 text-uppercase fw-bold small">Peso Total (Kg)</h6>
+                        <h2 class="fw-bold mt-2 display-6" id="kpiPeso">0.00</h2>
+                        <i class="bi bi-box-seam kpi-icon"></i>
                     </div>
                 </div>
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card card-kpi border-left-info h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs fw-bold text-info text-uppercase mb-1">Choferes</div>
-                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiChoferes">0</div>
-                                </div>
-                                <div class="col-auto"><i class="bi bi-person-badge fs-1 text-black-50"></i></div>
-                            </div>
-                        </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card-kpi bg-gradient-warning p-4">
+                        <h6 class="text-white-50 text-uppercase fw-bold small">Choferes Activos</h6>
+                        <h2 class="fw-bold mt-2 display-6" id="kpiChoferes">0</h2>
+                        <i class="bi bi-person-badge kpi-icon"></i>
                     </div>
                 </div>
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card card-kpi border-left-warning h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs fw-bold text-warning text-uppercase mb-1">Vehículos</div>
-                                    <div class="h3 mb-0 fw-bold text-dark" id="kpiVehiculos">0</div>
-                                </div>
-                                <div class="col-auto"><i class="bi bi-truck fs-1 text-black-50"></i></div>
-                            </div>
-                        </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card-kpi bg-gradient-info p-4">
+                        <h6 class="text-white-50 text-uppercase fw-bold small">Vehículos</h6>
+                        <h2 class="fw-bold mt-2 display-6" id="kpiVehiculos">0</h2>
+                        <i class="bi bi-truck kpi-icon"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Fila de Gráficos -->
-            <div class="row mb-4">
+            <!-- Gráficos -->
+            <div class="row g-4 mb-4">
                 <div class="col-lg-8">
-                    <div class="card card-dashboard shadow mb-4">
-                        <div class="card-header py-3 bg-white">
-                            <h6 class="m-0 fw-bold text-primary">Top 10 Choferes por Carga (Kg)</h6>
+                    <div class="card-dashboard">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="fw-bold text-dark m-0">Top Choferes por Carga</h6>
+                            <span class="badge bg-light text-secondary border">Interactiva</span>
                         </div>
-                        <div class="card-body">
-                            <div style="height: 300px;">
-                                <canvas id="chartChoferes"></canvas>
-                            </div>
+                        <div style="height: 320px; width: 100%;">
+                            <canvas id="chartChoferes"></canvas>
                         </div>
+                        <p class="text-center text-muted small mt-2"><i class="bi bi-info-circle"></i> Haz clic en una barra para filtrar la tabla</p>
                     </div>
                 </div>
                 <div class="col-lg-4">
-                    <div class="card card-dashboard shadow mb-4">
-                        <div class="card-header py-3 bg-white">
-                            <h6 class="m-0 fw-bold text-primary">Distribución por Vehículo</h6>
-                        </div>
-                        <div class="card-body">
-                            <div style="height: 300px;">
-                                <canvas id="chartVehiculos"></canvas>
-                            </div>
+                    <div class="card-dashboard">
+                        <h6 class="fw-bold text-dark mb-4">Flota Vehicular</h6>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="chartVehiculos"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabla de Datos -->
-            <div class="card card-dashboard shadow mb-4">
-                <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-primary"><i class="bi bi-table"></i> Detalle de Manifiestos</h6>
-                    <button class="btn btn-success btn-sm fw-bold shadow-sm" id="btnDownload">
-                        <i class="bi bi-file-earmark-excel-fill"></i> Descargar Excel (Vista Actual)
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="dataTable" class="table table-hover w-100" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>Reparto</th>
-                                    <th>Chofer</th>
-                                    <th>Vehículo</th>
-                                    <th>Guía</th>
-                                    <th>Fecha</th>
-                                    <th>Destinatario</th>
-                                    <th>Peso (Kg)</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+            <!-- Tabla Detallada -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card-dashboard">
+                        <h6 class="fw-bold text-dark mb-3">Detalle de Operaciones</h6>
+                        <div class="table-responsive">
+                            <table id="dataTable" class="table table-hover w-100 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Reparto</th>
+                                        <th>Chofer</th>
+                                        <th>Vehículo</th>
+                                        <th>Guía</th>
+                                        <th>Fecha</th>
+                                        <th>Destinatario</th>
+                                        <th class="text-end">Peso</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-        </div> <!-- Fin dashboardContent -->
+        </div>
     </div>
 
-    <!-- Spinner de Carga -->
-    <div id="loading" class="loading-overlay">
-        <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem;"></div>
-        <h4 class="text-dark fw-bold">Procesando Información...</h4>
-        <p class="text-muted">Extrayendo datos de los PDFs</p>
+    <!-- Loader Personalizado -->
+    <div id="loading" class="loader-overlay">
+        <div class="spinner-custom mb-3"></div>
+        <h5 class="fw-bold text-dark">Procesando Información...</h5>
+        <p class="text-muted small">Por favor espere mientras extraemos los datos</p>
     </div>
 
     <!-- Scripts Libraries -->
@@ -223,54 +305,91 @@
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Librerías de Fecha -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.2/moment.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.13.4/sorting/datetime-moment.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
     <script>
         let myTable;
         let chartChoferes, chartVehiculos;
+        let fullData = []; 
 
         $(document).ready(function() {
-            // Inicializar DataTable
+            // 1. Configurar ordenamiento de fechas en formato DD/MM/YYYY
+            $.fn.dataTable.moment('DD/MM/YYYY');
+
+            // 2. Configurar Flatpickr (Calendario)
+            const datePicker = flatpickr("#dateRange", {
+                mode: "range",
+                dateFormat: "d/m/Y",
+                locale: "es",
+                onChange: function(selectedDates) {
+                    if (selectedDates.length === 2) {
+                        filterByDate(selectedDates[0], selectedDates[1]);
+                    }
+                }
+            });
+
+            // Limpiar filtro de fecha
+            $('#clearDate').on('click', function() {
+                datePicker.clear();
+                $.fn.dataTable.ext.search.pop(); // Remover filtro custom
+                myTable.draw();
+            });
+
+            // 3. Inicializar DataTable
             myTable = $('#dataTable').DataTable({
                 language: { url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json" },
                 pageLength: 10,
+                lengthChange: false, // Más limpio sin selector de páginas
                 responsive: true,
+                dom: 'Bfrtip', // Opciones de layout
                 columns: [
-                    { data: 'nro_reparto' },
-                    { data: 'chofer' },
+                    { data: 'nro_reparto', render: data => `<span class="badge-reparto">${data}</span>` },
+                    { data: 'chofer', className: 'fw-bold text-secondary' },
                     { data: 'vehiculo' },
                     { data: 'nro_guia' },
                     { data: 'fecha_traslado' },
                     { data: 'nombre_destinatario' },
                     { 
                         data: 'peso', 
-                        className: 'text-end fw-bold',
-                        render: $.fn.dataTable.render.number(',', '.', 2, '') 
+                        className: 'text-end',
+                        render: function(data) {
+                            let val = parseFloat(data) || 0;
+                            let colorClass = val > 1000 ? 'text-danger' : 'text-dark';
+                            // FORZAR 2 DECIMALES SIEMPRE
+                            return `<span class="fw-bold ${colorClass}">${val.toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2})} kg</span>`;
+                        } 
                     }
                 ]
             });
 
-            // --- EVENTO CLAVE: Cuando la tabla se redibuja (filtro/búsqueda) ---
+            // EVENTO CENTRAL: Actualizar Dashboard al filtrar la tabla
             myTable.on('draw', function () {
-                // Obtenemos solo los datos filtrados disponibles
                 let filteredData = myTable.rows({ search: 'applied' }).data().toArray();
-                updateDashboard(filteredData);
+                updateKPIs(filteredData);
+                updateCharts(filteredData);
             });
 
-            // Selección de archivos
+            // 4. Lógica de Carga de Archivos
             $('#dropZone').on('click', () => $('#fileInput').click());
-            $('#fileInput').on('click', (e) => e.stopPropagation());
+            $('#fileInput').on('click', e => e.stopPropagation());
+            
             $('#fileInput').on('change', function() {
                 if(this.files.length > 0) {
-                    $('#fileList').text(`${this.files.length} archivo(s) listo(s)`);
-                    $('#btnProcesar').prop('disabled', false);
+                    $('#fileList').html(`<i class="bi bi-check-circle-fill me-2"></i> ${this.files.length} archivo(s) listo(s)`);
+                    $('#btnProcesar').prop('disabled', false).removeClass('btn-dark').addClass('btn-primary');
                 }
             });
 
-            // Enviar formulario (Procesar PDF)
             $('#uploadForm').on('submit', function(e) {
                 e.preventDefault();
                 $('#loading').css('display', 'flex');
-                
+                $('#uploadSection').hide(); 
+
                 const formData = new FormData(this);
 
                 $.ajax({
@@ -280,54 +399,48 @@
                     processData: false,
                     contentType: false,
                     success: function(response) {
-                        $('#loading').css('display', 'none');
+                        $('#loading').fadeOut();
                         
-                        if (response.length === 0) {
-                            Swal.fire('Sin datos', 'No se encontró información en los PDFs.', 'info');
+                        if (!response || response.length === 0) {
+                            Swal.fire('Atención', 'No se encontraron datos válidos en los PDFs.', 'warning');
+                            $('#uploadSection').show();
                             return;
                         }
 
-                        // Limpiar y parsear datos numéricos
-                        let cleanData = response.map(item => ({
+                        // Limpieza de datos (asegurar floats)
+                        fullData = response.map(item => ({
                             ...item,
                             peso: parseFloat(String(item.peso).replace(/,/g, '')) || 0
                         }));
 
-                        // Llenar tabla y disparar actualización
-                        myTable.clear();
-                        myTable.rows.add(cleanData);
-                        myTable.draw(); // Esto llama a updateDashboard automáticamente
-
-                        $('#dashboardContent').removeClass('d-none');
-                        // Scroll suave
-                        $('html, body').animate({ scrollTop: $("#dashboardContent").offset().top - 20 }, 600);
+                        myTable.clear().rows.add(fullData).draw();
+                        $('#dashboardContent').removeClass('d-none').hide().fadeIn(800);
                         
-                        const Toast = Swal.mixin({
-                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000
-                        });
-                        Toast.fire({ icon: 'success', title: 'Datos cargados exitosamente' });
+                        // Forzar update inicial de KPIs
+                        updateKPIs(fullData);
                     },
                     error: function() {
-                        $('#loading').css('display', 'none');
+                        $('#loading').fadeOut();
+                        $('#uploadSection').show();
                         Swal.fire('Error', 'Hubo un problema al procesar los archivos.', 'error');
                     }
                 });
             });
 
-            // Descargar Excel Filtrado
+            // 5. Descargar Excel
             $('#btnDownload').on('click', function() {
                 let filteredData = myTable.rows({ search: 'applied' }).data().toArray();
                 
-                if(filteredData.length === 0) {
-                    Swal.fire('Aviso', 'No hay datos visibles para descargar.', 'warning');
+                if (filteredData.length === 0) {
+                    Swal.fire('Aviso', 'No hay datos visibles para descargar', 'info');
                     return;
                 }
 
                 let btn = $(this);
-                let originalContent = btn.html();
-                btn.html('<span class="spinner-border spinner-border-sm"></span> Generando...');
-                btn.prop('disabled', true);
-
+                let originalText = btn.html();
+                
+                btn.html('<span class="spinner-border spinner-border-sm me-2"></span> Generando...');
+                
                 fetch('/api/download-excel', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -338,111 +451,162 @@
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = "Reporte_Filtrado.xlsx";
+                    a.download = `Reporte_Logistico_${moment().format('YYYYMMDD')}.xlsx`;
                     document.body.appendChild(a);
                     a.click();
                     a.remove();
-                    btn.html(originalContent);
-                    btn.prop('disabled', false);
+                    btn.html(originalText);
                 })
-                .catch(() => {
-                    Swal.fire('Error', 'No se pudo generar el Excel.', 'error');
-                    btn.html(originalContent);
-                    btn.prop('disabled', false);
+                .catch(err => {
+                    Swal.fire('Error', 'Fallo en la descarga', 'error');
+                    btn.html(originalText);
                 });
             });
         });
 
-        // --- FUNCIONES DE GRÁFICOS Y KPI ---
+        // --- LÓGICA DE NEGOCIO Y VISUALIZACIÓN ---
 
-        function updateDashboard(data) {
-            // 1. Cálculos de KPIs
+        function updateKPIs(data) {
+            // Cálculos
             let totalGuias = data.length;
-            let totalPeso = data.reduce((sum, item) => sum + (item.peso || 0), 0);
-            let uniqueChoferes = new Set(data.map(d => d.chofer)).size;
-            let uniqueVehiculos = new Set(data.map(d => d.vehiculo)).size;
-
-            // Actualizar textos
-            $('#kpiGuias').text(totalGuias);
-            $('#kpiPeso').text(totalPeso.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-            $('#kpiChoferes').text(uniqueChoferes);
-            $('#kpiVehiculos').text(uniqueVehiculos);
-
-            // 2. Preparar datos para Gráficos
-            // Agrupar peso por chofer
-            let choferMap = {};
-            data.forEach(d => {
-                let c = d.chofer || "Sin Chofer";
-                choferMap[c] = (choferMap[c] || 0) + d.peso;
-            });
-            // Top 10 Choferes
-            let topChoferes = Object.entries(choferMap)
-                .sort((a,b) => b[1] - a[1])
-                .slice(0, 10);
+            let totalPeso = data.reduce((sum, item) => sum + (parseFloat(item.peso) || 0), 0);
             
-            // Agrupar conteo por vehículo
-            let vehiculoMap = {};
-            data.forEach(d => {
-                let v = d.vehiculo || "N/A";
-                vehiculoMap[v] = (vehiculoMap[v] || 0) + 1;
-            });
+            // Contar únicos ignorando vacíos
+            let unicosChofer = new Set(data.map(d => d.chofer && d.chofer.trim() !== "" ? d.chofer : null));
+            unicosChofer.delete(null);
+            
+            let unicosVehiculo = new Set(data.map(d => d.vehiculo && d.vehiculo.trim() !== "" ? d.vehiculo : null));
+            unicosVehiculo.delete(null);
 
-            // 3. Renderizar Gráficos
-            renderChartChoferes(topChoferes);
-            renderChartVehiculos(vehiculoMap);
+            // Animar valores (Flag true para decimales en Peso)
+            animateValue("kpiGuias", totalGuias, false);
+            animateValue("kpiPeso", totalPeso, true); 
+            animateValue("kpiChoferes", unicosChofer.size, false);
+            animateValue("kpiVehiculos", unicosVehiculo.size, false);
         }
 
-        function renderChartChoferes(dataArr) {
-            const ctx = document.getElementById('chartChoferes').getContext('2d');
-            const labels = dataArr.map(x => x[0]);
-            const values = dataArr.map(x => x[1]);
+        // Función de animación robusta para números
+        function animateValue(id, endValue, isDecimal) {
+            let $element = $('#' + id);
+            
+            // Caso 0 directo
+            if (endValue === 0) {
+                $element.text(isDecimal ? "0.00" : "0");
+                return;
+            }
 
-            if (chartChoferes) chartChoferes.destroy();
-
-            chartChoferes = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Peso (Kg)',
-                        data: values,
-                        backgroundColor: '#4e73df',
-                        borderRadius: 4
-                    }]
+            // Animación usando objeto proxy
+            $({ val: 0 }).animate({ val: endValue }, {
+                duration: 1200,
+                easing: 'swing',
+                step: function() {
+                    if (isDecimal) {
+                        $element.text(this.val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    } else {
+                        $element.text(Math.ceil(this.val));
+                    }
                 },
-                options: {
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-        }
-
-        function renderChartVehiculos(mapData) {
-            const ctx = document.getElementById('chartVehiculos').getContext('2d');
-            const labels = Object.keys(mapData);
-            const values = Object.values(mapData);
-            const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
-
-            if (chartVehiculos) chartVehiculos.destroy();
-
-            chartVehiculos = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { position: 'right', labels: { boxWidth: 12 } } 
+                complete: function() {
+                    if (isDecimal) {
+                        $element.text(endValue.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    } else {
+                        $element.text(endValue);
                     }
                 }
             });
+        }
+
+        function updateCharts(data) {
+            // Agrupar datos
+            let choferMap = {};
+            data.forEach(d => { if(d.chofer) choferMap[d.chofer] = (choferMap[d.chofer] || 0) + d.peso; });
+            let sortedChoferes = Object.entries(choferMap).sort((a,b) => b[1] - a[1]).slice(0, 10);
+
+            let vehiculoMap = {};
+            data.forEach(d => { if(d.vehiculo) vehiculoMap[d.vehiculo] = (vehiculoMap[d.vehiculo] || 0) + 1; });
+
+            // 1. Gráfico Barras (Choferes)
+            const ctxChofer = document.getElementById('chartChoferes').getContext('2d');
+            if (chartChoferes) chartChoferes.destroy();
+            
+            chartChoferes = new Chart(ctxChofer, {
+                type: 'bar',
+                data: {
+                    labels: sortedChoferes.map(x => x[0]),
+                    datasets: [{
+                        label: 'Peso (Kg)',
+                        data: sortedChoferes.map(x => x[1]),
+                        backgroundColor: '#667eea',
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#764ba2'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { ticks: { callback: function(val){ return val / 1000 + 'k'; } } }
+                    },
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const label = chartChoferes.data.labels[index];
+                            myTable.search(label).draw();
+                            Swal.fire({
+                                toast: true, position: 'top-end', showConfirmButton: false, timer: 2000,
+                                icon: 'info', title: `Filtrando por: ${label}`
+                            });
+                        }
+                    }
+                }
+            });
+
+            // 2. Gráfico Dona (Vehículos)
+            const ctxVeh = document.getElementById('chartVehiculos').getContext('2d');
+            if (chartVehiculos) chartVehiculos.destroy();
+            
+            chartVehiculos = new Chart(ctxVeh, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(vehiculoMap),
+                    datasets: [{
+                        data: Object.values(vehiculoMap),
+                        backgroundColor: ['#4facfe', '#43e97b', '#fa709a', '#a18cd1', '#fbc2eb'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    cutout: '70%', 
+                    plugins: { 
+                        legend: { position: 'right', labels: { usePointStyle: true, font: {size: 11} } } 
+                    }
+                }
+            });
+        }
+
+        function filterByDate(start, end) {
+            $.fn.dataTable.ext.search.push(
+                function(settings, data, dataIndex) {
+                    var dateStr = data[4]; // Índice 4 es Fecha
+                    if (!dateStr) return false;
+                    
+                    var parts = dateStr.split("/");
+                    // Crear objeto Date (meses son 0-11)
+                    var dateRow = new Date(parts[2], parts[1] - 1, parts[0]);
+                    
+                    // Normalizar horas
+                    start.setHours(0,0,0,0);
+                    end.setHours(23,59,59,999);
+
+                    return (dateRow >= start && dateRow <= end);
+                }
+            );
+            myTable.draw();
         }
     </script>
 </body>
